@@ -1,0 +1,22 @@
+# BRUCE RAG Configuration v1.1
+
+bruce:
+  server_port: 9999
+  api_port: 9998
+
+database:
+  host: ${DB_HOST:localhost}
+  port: ${DB_PORT:5432}
+  dbname: ${DB_NAME:bruce_rag}
+  user: ${DB_USER:bruce}
+  password: ${DB_PASSWORD}
+
+models:
+  code: "http://localhost:8001"
+  docs_de: "http://localhost:8002"
+  bruce: "http://localhost:8003"
+  docs_en: "http://localhost:8004"
+  math: "http://localhost:8005"
+  assembler: "http://localhost:8000"
+
+# Siehe Dokumentation für vollständige Konfiguration
