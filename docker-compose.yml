@@ -1,0 +1,89 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_DB: bruce_rag
+      POSTGRES_USER: bruce
+      POSTGRES_PASSWORD: secretpassword
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./schema:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: src/python/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: bruce_rag
+      DB_USER: bruce
+      DB_PASSWORD: secretpassword
+    ports:
+      - "9998:9998"
+    depends_on:
+      - postgres
+    command: uvicorn api.main:app --host 0.0.0.0 --port 9998
+
+  calc_bruce:
+    build:
+      context: .
+      dockerfile: src/python/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: bruce_rag
+      DB_USER: bruce
+      DB_PASSWORD: secretpassword
+      CALC_BACKEND: granite
+      HF_FALLBACK_ENABLED: ${HF_FALLBACK_ENABLED:-1}
+      HF_FALLBACK_MIN_CONF: ${HF_FALLBACK_MIN_CONF:-0.68}
+      HF_API_TOKEN: ${HF_API_TOKEN:-}
+      HF_API_MODEL: ${HF_API_MODEL:-google/flan-t5-base}
+    ports:
+      - "8003:8003"
+    depends_on:
+      - postgres
+    command: uvicorn calc_models.service:app --host 0.0.0.0 --port 8003
+
+  calc_docs_de:
+    build:
+      context: .
+      dockerfile: src/python/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: bruce_rag
+      DB_USER: bruce
+      DB_PASSWORD: secretpassword
+      CALC_BACKEND: ${CALC_BACKEND_DOCS:-extractive}
+      HF_FALLBACK_ENABLED: ${HF_FALLBACK_ENABLED_DOCS:-1}
+      HF_FALLBACK_MIN_CONF: ${HF_FALLBACK_MIN_CONF_DOCS:-0.68}
+      HF_API_TOKEN: ${HF_API_TOKEN:-}
+      HF_API_MODEL: ${HF_API_MODEL:-google/flan-t5-base}
+    ports:
+      - "8012:8002"
+    depends_on:
+      - postgres
+    command: uvicorn calc_models.service:app --host 0.0.0.0 --port 8002
+
+  assembler:
+    build:
+      context: .
+      dockerfile: src/python/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: bruce_rag
+      DB_USER: bruce
+      DB_PASSWORD: secretpassword
+    ports:
+      - "8010:8000"
+    depends_on:
+      - postgres
+    command: uvicorn assembler.service:app --host 0.0.0.0 --port 8000
+
+volumes:
+  postgres_data:
